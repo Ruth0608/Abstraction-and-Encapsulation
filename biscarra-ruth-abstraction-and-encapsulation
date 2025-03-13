@@ -1,0 +1,174 @@
+#include <iostream>
+#include <vector>
+#include <iomanip>
+#include <algorithm>
+#include <limits>
+
+using namespace std;
+
+string toLowerCase(string str) {
+    transform(str.begin(), str.end(), str.begin(), ::tolower);
+    return str;
+}
+
+class Employee {
+protected:
+    string id;
+    string name;
+
+public:
+    Employee(string empID, string empName) : id(toLowerCase(empID)), name(empName) {}
+    virtual double calculateSalary() const = 0;
+    virtual void display() const = 0;
+    string getID() const { return id; }
+};
+
+class FullTimeEmployee : public Employee {
+private:
+    double fixedSalary;
+
+public:
+    FullTimeEmployee(string empID, string empName, double salary)
+        : Employee(empID, empName), fixedSalary(salary) {}
+
+    double calculateSalary() const override {
+        return fixedSalary;
+    }
+
+    void display() const override {
+        cout << "Employee: " << name << " (ID: " << id << ")\n";
+        cout << "Fixed Monthly Salary: Php " << fixedSalary << "\n\n";
+    }
+};
+
+class PartTimeEmployee : public Employee {
+private:
+    double hourlyWage;
+    int hoursWorked;
+
+public:
+    PartTimeEmployee(string empID, string empName, double wage, int hours)
+        : Employee(empID, empName), hourlyWage(wage), hoursWorked(hours) {}
+
+    double calculateSalary() const override {
+        return hourlyWage * hoursWorked;
+    }
+
+    void display() const override {
+        cout << "Employee: " << name << " (ID: " << id << ")\n";
+        cout << "Hourly Wage: Php " << hourlyWage << "\n";
+        cout << "Hours Worked: " << hoursWorked << "\n";
+        cout << "Total Salary: Php " << calculateSalary() << "\n\n";
+    }
+};
+
+class ContractEmployee : public Employee {
+private:
+    double paymentPerProject;
+    int projectsCompleted;
+
+public:
+    ContractEmployee(string empID, string empName, double payment, int projects)
+        : Employee(empID, empName), paymentPerProject(payment), projectsCompleted(projects) {}
+
+    double calculateSalary() const override {
+        return paymentPerProject * projectsCompleted;
+    }
+
+    void display() const override {
+        cout << "Employee: " << name << " (ID: " << id << ")\n";
+        cout << "Contract Payment Per Project: Php " << paymentPerProject << "\n";
+        cout << "Projects Completed: " << projectsCompleted << "\n";
+        cout << "Total Salary: Php " << calculateSalary() << "\n\n";
+    }
+};
+
+bool isDuplicateID(const vector<Employee*>& employees, string id) {
+    id = toLowerCase(id);
+    for (const auto& emp : employees) {
+        if (emp->getID() == id)
+            return true;
+    }
+    return false;
+}
+
+double getValidDoubleInput(string prompt) {
+    double value;
+    while (true) {
+        cout << prompt;
+        cin >> value;
+        if (cin.fail() || value < 0) {
+            cout << "Invalid input. Please enter a valid number.\n";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        } else {
+            return value;
+        }
+    }
+}
+
+int main() {
+    vector<Employee*> employees;
+    int choice;
+
+    do {
+        cout << "\n------- MENU -------\n";
+        cout << "1 - Full-time Employee\n";
+        cout << "2 - Part-time Employee\n";
+        cout << "3 - Contractual Employee\n";
+        cout << "4 - Display Payroll Report\n";
+        cout << "5 - Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        if (choice == 1 || choice == 2 || choice == 3) {
+            string id, name;
+            double salary;
+
+            do {
+                cout << "Enter Employee ID: ";
+                cin >> id;
+                id = toLowerCase(id);
+                if (isDuplicateID(employees, id))
+                    cout << "Duplicate ID! Please enter another ID.\n";
+            } while (isDuplicateID(employees, id));
+
+            cout << "Enter Employee Name: ";
+            cin.ignore();
+            getline(cin, name);
+
+            salary = getValidDoubleInput("Enter Salary: Php ");
+
+            if (choice == 1) {
+                employees.push_back(new FullTimeEmployee(id, name, salary));
+            } else if (choice == 2) {
+                int hours = getValidDoubleInput("Enter Number of Hours Worked: ");
+                employees.push_back(new PartTimeEmployee(id, name, salary, hours));
+            } else if (choice == 3) {
+                int projects = getValidDoubleInput("Enter Number of Projects Completed: ");
+                employees.push_back(new ContractEmployee(id, name, salary, projects));
+            }
+
+            cout << "Employee Added Successfully!\n";
+        } else if (choice == 4) {
+            if (employees.empty()) {
+                cout << "No employees added yet!\n";
+            } else {
+                cout << "\n------ Employee Payroll Report ------\n";
+                for (const auto& emp : employees)
+                    emp->display();
+            }
+        } else if (choice == 5) {
+            cout << "Exiting program...\n";
+        } else {
+            cout << "Invalid choice! Please select a valid option.\n";
+        }
+    } while (choice != 5);
+
+    for (auto& emp : employees) {
+        delete emp;
+    }
+    employees.clear();
+
+    return 0;
+}
